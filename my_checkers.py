@@ -1,4 +1,7 @@
 import pygame
+import pygame.freetype
+import sys
+import os
 
 #Stałe
 empty = 0
@@ -152,11 +155,10 @@ class Pieces:
         # Logika dla Damek (ang. king)
         # Zaobieganie przed skoczeniem na zajęte pole
         if board[new_y][new_x] != 0:
-            print("Na tym polu już jest pion")
             return False
-        # Zapobieganie ruchom pionowym i poziomym
-        if (new_y == old_y or new_x == old_x):
-            print("Możesz poruszać się tylko po skosach")
+        if new_y == old_y:
+            return False
+        if (new_x == old_x):
             return False
         # Zapobieganie ruchom w tył(?)
         if new_x > old_x and new_y > old_y:
@@ -172,48 +174,48 @@ class Pieces:
             if (new_x - old_x) != (old_y - new_y):
                 return False
 
-            # Logika skoków Damki
-            if board[old_y][old_x] == friendly['king']:
-                try: 
-                    if board[new_y + 1][new_x - 1] == enemy['pawn'] or enemy['king']:
-                        if old_x < new_x and old_y > new_y:
-                            if self.no_chips_between(board, old_x, old_y, new_x, new_y) is True:
-                                board[new_y][new_x] = friendly['king']
-                                board[new_y + 1][new_x - 1] = empty
-                                board_selection = empty
-                                return True
-                except IndexError:
-                    pass
-                try: 
-                    if board[new_y + 1][new_x + 1] == enemy['pawn'] or enemy['king']:
-                        if old_x > new_x and old_y > new_y:
-                            if self.no_chips_between(board, old_x, old_y, new_x, new_y) is True:
-                                board[new_y][new_x] = friendly['king']
-                                board[new_y + 1][new_x + 1] = empty
-                                board_selection = empty
-                                return True
-                except IndexError:
-                    pass
-                try:
-                    if board[new_y - 1][new_x - 1] == enemy['pawn'] or enemy['king']:
+        # Logika skoków Damki
+        if board[old_y][old_x] == friendly['king']:
+            try: 
+                if board[new_y + 1][new_x - 1] == enemy['pawn'] or enemy['king']:
+                    if old_x < new_x and old_y > new_y:
                         if self.no_chips_between(board, old_x, old_y, new_x, new_y) is True:
-                            if old_x < new_x and old_y < new_y:
-                                board[new_y][new_x] = friendly['king']
-                                board[new_y - 1][new_x - 1] = empty
-                                board_selection = empty
-                                return True
-                except IndexError:
-                    pass
-                try: 
-                    if board[new_y - 1][new_x + 1] == enemy['pawn'] or enemy['pawn']:
+                            board[new_y][new_x] = friendly['king']
+                            board[new_y + 1][new_x - 1] = empty
+                            board_selection = empty
+                            return True
+            except IndexError:
+                pass
+            try: 
+                if board[new_y + 1][new_x + 1] == enemy['pawn'] or enemy['king']:
+                    if old_x > new_x and old_y > new_y:
                         if self.no_chips_between(board, old_x, old_y, new_x, new_y) is True:
-                            if old_x > new_x and old_y < new_y:
-                                board[new_y][new_x] = friendly['king']
-                                board[new_y - 1][new_x + 1] = empty
-                                board_selection = empty
-                                return True
-                except IndexError:
-                    pass
+                            board[new_y][new_x] = friendly['king']
+                            board[new_y + 1][new_x + 1] = empty
+                            board_selection = empty
+                            return True
+            except IndexError:
+                pass
+            try:
+                if board[new_y - 1][new_x - 1] == enemy['pawn'] or enemy['king']:
+                    if self.no_chips_between(board, old_x, old_y, new_x, new_y) is True:
+                        if old_x < new_x and old_y < new_y:
+                            board[new_y][new_x] = friendly['king']
+                            board[new_y - 1][new_x - 1] = empty
+                            board_selection = empty
+                            return True
+            except IndexError:
+                pass
+            try: 
+                if board[new_y - 1][new_x + 1] == enemy['pawn'] or enemy['pawn']:
+                    if self.no_chips_between(board, old_x, old_y, new_x, new_y) is True:
+                        if old_x > new_x and old_y < new_y:
+                            board[new_y][new_x] = friendly['king']
+                            board[new_y - 1][new_x + 1] = empty
+                            board_selection = empty
+                            return True
+            except IndexError:
+                pass
 
 
     def check_if_double_jump_possible(self, board, new_x, new_y):
@@ -238,7 +240,7 @@ class Pieces:
                         return True
             except IndexError:
                 pass
-        # Sprawdzanie czy podwójny skok jest możliwy
+        # Sprawdzanie czy podwójny skok jest możliwy dla damy
         if board[new_y][new_x] == friendly['king']:
             try:
                 for i in range(8):
@@ -265,7 +267,13 @@ class Pieces:
             remaining_enemy_pieces.append(row.count(enemy['pawn']))
             remaining_enemy_pieces.append(row.count(enemy['king']))
         if sum(remaining_enemy_pieces) == 0:
-            print(f"Player {current_player} has won!")
+            #print(f"Player {current_player} has won!")
+            # pygame.draw.rect(screen, black, (0, 0, 800, 100))
+            # if current_player == 1:
+            #     text_surface, rect = myfontB.render("White's Win!", white)
+            # else:
+            #     text_surface, rect = myfontB.render("Black's Win!", white)
+            # screen.blit(text_surface, (320, 30))
             return True
 
 class Window:
@@ -299,10 +307,12 @@ class BoardWindow(Window):
         return self._height
 
 class Board:  
-    def __init__(self):
+    def __init__(self, offsetX, offsetY):
         self._rows = 8
         self._columns = 8
         self._board = [[empty for column in range(self._columns)] for row in range(self._rows)]
+        self._offsetX = offsetX
+        self._offsetY = offsetY
     
     def getBoard(self):
         return self._board
@@ -322,7 +332,7 @@ class Board:
                     color = white
                 else:
                     color = black
-                rect = pygame.draw.rect(screen, color, [gWidth * column, gHeight * row, gWidth, gHeight])
+                rect = pygame.draw.rect(screen, color, [gWidth * column + self._offsetX, gHeight * row + self._offsetY, gWidth, gHeight])
                 rect_center = rect.center
                 if board[row][column] == 1:
                     pygame.draw.circle(screen, white, rect_center, radius)
@@ -337,9 +347,13 @@ class Board:
                 if board[row][column] == 4:
                     pygame.draw.circle(screen, gold, rect_center, radius, border)
 
+# restart = False
+# while not restart:
 # Inicjalizcja potrzebnych zmiennych
+offsetX = 0
+offsetY = 100
 game_over = False
-b = Board()
+b = Board(offsetX,offsetY)
 board = b.getBoard()
 pieces = Pieces()
 friendly = pieces.getFrendly()
@@ -348,6 +362,9 @@ pieces.place_starting_pieces(board)
 
 # Inizjalizacja pygame
 pygame.init()
+
+myfont = pygame.freetype.Font('CaviarDreams.ttf', 30)
+myfontB = pygame.freetype.Font('Caviar_Dreams_Bold.ttf', 30)
 
 # Ustawienie wymiarów okna aplikacji
 window = Window()
@@ -373,25 +390,41 @@ border = (boardWindow.getWidth() // 200)
 
 # Informacja kogo teraz ruch
 current_player = 1
-print("White's Turn") 
+pygame.draw.rect(screen, black, (0, 0, 800, 100))
+text_surface, rect = myfont.render("White's Turn", white)
+screen.blit(text_surface, (320, 30))
+
 
 # Głown pętla gry 
 while not game_over:
     # pobieranie informacji o ruchach użytkowanika
     for event in pygame.event.get():
         mouse_pos = pygame.mouse.get_pos()
-        # macierz współżędnych myszy
-        mouse_matrix_pos = ((mouse_pos[0] // gWidth), (mouse_pos[1] // gHeight))
+        click = pygame.mouse.get_pressed()
+        # macierz współrzędnych myszy dla planszy
+        mouse_matrix_pos_b = ((mouse_pos[0] - offsetX)// gWidth, (mouse_pos[1] - offsetY)// gHeight)
         
+        if 601+200 > mouse_pos[0] > 601 and 100+600 > mouse_pos[1] > 100:
+            pygame.draw.rect(screen, gold, (601, 100, 200, 600))
+            
+            if click[0] == 1:
+                python = sys.executable
+                os.execl(python, python, *sys.argv)
+        else:
+            pygame.draw.rect(screen, grey, (601, 100, 200, 600))
+        text_surface, rect = myfontB.render("Restart", white)
+        screen.blit(text_surface, (650, 390))
+
         # Gdy użytkownik zamknie okno
         if event.type == pygame.QUIT:
-            game_over = True
+            #game_over = True
+            pygame.quit()
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            current_pos = pygame.mouse.get_pos()
             # Przełożenie pozycji myszy na planszę
-            old_x = (current_pos[0] // gWidth)
-            old_y = (current_pos[1] // gHeight)
+
+            old_x = mouse_matrix_pos_b[0]
+            old_y = mouse_matrix_pos_b[1]
 
             previous_piece_total = sum([sum(row) for row in board])
 
@@ -405,12 +438,13 @@ while not game_over:
             while True:
                 event = pygame.event.wait()
                 if event.type == pygame.QUIT:
-                    game_over = True
+                    #game_over = True
+                    pygame.quit()
                 elif event.type == pygame.MOUSEBUTTONUP:
                     new_pos = pygame.mouse.get_pos()
                     # Przełożenie pozycji myszy na planszę
-                    new_x = (new_pos[0] // gWidth)
-                    new_y = (new_pos[1] // gHeight)
+                    new_x = ((new_pos[0] - offsetX )// gWidth)
+                    new_y = ((new_pos[1] - offsetY )// gHeight)
 
                     if board[old_y][old_x] == friendly['pawn']:
                         if pieces.is_valid_move(current_player, board, old_x, old_y, new_x, new_y) is True:
@@ -429,22 +463,32 @@ while not game_over:
                                     pass
                                 else:
                                     # Swap sides
+                                    pygame.draw.rect(screen, black, (0, 0, 800, 100))
                                     if current_player == 1:
                                         current_player = 2
-                                        print("Black's Turn")
+                                        #print("Black's Turn")
+                                        text_surface, rect = myfont.render("Black's Turn", white)
+                                        screen.blit(text_surface, (320, 30))
                                     else:
                                         current_player = 1
-                                        print("White's Turn")
+                                        #print("White's Turn")
+                                        text_surface, rect = myfont.render("White's Turn", white)
+                                        screen.blit(text_surface, (320, 30))
 
                                     friendly, enemy = enemy, friendly
                             else:
                                 # Swap sides
+                                pygame.draw.rect(screen, black, (0, 0, 800, 100))
                                 if current_player == 1:
                                     current_player = 2
-                                    print("Black's Turn")
+                                    #print("Black's Turn")
+                                    text_surface, rect = myfont.render("Black's Turn", white)
+                                    screen.blit(text_surface, (320, 30))
                                 else:
                                     current_player = 1
-                                    print("White's Turn")
+                                    #print("White's Turn")
+                                    text_surface, rect = myfont.render("White's Turn", white)
+                                    screen.blit(text_surface, (320, 30))
 
                                 friendly, enemy = enemy, friendly
 
@@ -462,21 +506,31 @@ while not game_over:
                                 if pieces.check_if_double_jump_possible(board, new_x, new_y) is True:
                                     pass
                                 else:
+                                    pygame.draw.rect(screen, black, (0, 0, 800, 100))
                                     if current_player == 1:
                                         current_player = 2
-                                        print("Black's Turn")
+                                        #print("Black's Turn")
+                                        text_surface, rect = myfont.render("Black's Turn", white)
+                                        screen.blit(text_surface, (320, 30))
                                     else:
                                         current_player = 1
-                                        print("White's Turn")
+                                        #print("White's Turn")
+                                        text_surface, rect = myfont.render("White's Turn", white)
+                                        screen.blit(text_surface, (320, 30))
 
                                     friendly, enemy = enemy, friendly
                             else:
+                                pygame.draw.rect(screen, black, (0, 0, 800, 100))
                                 if current_player == 1:
                                     current_player = 2
-                                    print("Black's Turn")
+                                    #print("Black's Turn")
+                                    text_surface, rect = myfont.render("Black's Turn", white)
+                                    screen.blit(text_surface, (320, 30))
                                 else:
                                     current_player = 1
-                                    print("White's Turn")
+                                    #print("White's Turn")
+                                    text_surface, rect = myfont.render("White's Turn", white)
+                                    screen.blit(text_surface, (320, 30))
 
                                 friendly, enemy = enemy, friendly
 
@@ -486,7 +540,7 @@ while not game_over:
                             # Checking for player 1 king pieces
                             if board[0][column] == 1:
                                 board[0][column] = 3
-                             # Cecking for player 2 king pieces
+                            # Cecking for player 2 king pieces
                             elif board[7][column] == 2:
                                 board[7][column] = 4
                     break
@@ -500,5 +554,12 @@ while not game_over:
     # Update screen with what we drew
     pygame.display.flip()
 
+pygame.draw.rect(screen, gold, (200, 150, 400, 400))
+if current_player == 1:
+    text_surface, rect = myfontB.render("White's Win!", white)
+else:
+    text_surface, rect = myfontB.render("Black's Win!", white)
+screen.blit(text_surface, (400, 350))
+
 # Exit the game
-pygame.quit()
+#pygame.quit()
